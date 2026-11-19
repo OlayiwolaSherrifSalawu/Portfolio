@@ -25,10 +25,29 @@ function hasWebGL() {
   }
 }
 
-/** Fixed full-screen 3D backdrop. If WebGL isn't available, the page still works as plain HTML. */
+/**
+ * Fixed full-screen 3D backdrop. three.js and its render loop are the heaviest part of the page,
+ * so the scene starts on the visitor's first interaction (move, scroll, touch, key) and fades in.
+ * The page is complete and usable before that. Without WebGL it stays plain HTML.
+ */
 export default function SceneLoader() {
   const [ok, setOk] = useState(false);
-  useEffect(() => setOk(hasWebGL()), []);
+  useEffect(() => {
+    if (!hasWebGL()) return;
+    let done = false;
+    const go = () => {
+      if (done) return;
+      done = true;
+      cleanup();
+      setOk(true);
+    };
+    const events = ["pointermove", "pointerdown", "scroll", "keydown", "touchstart", "wheel"] as const;
+    events.forEach((e) => window.addEventListener(e, go, { once: true, passive: true }));
+    function cleanup() {
+      events.forEach((e) => window.removeEventListener(e, go));
+    }
+    return cleanup;
+  }, []);
   return (
     <div className="stage" aria-hidden>
       <LiquidBackground />

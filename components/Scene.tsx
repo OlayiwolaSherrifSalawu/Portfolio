@@ -280,7 +280,7 @@ export default function Scene() {
 
   return (
     <Canvas
-      dpr={[1, 1.75]}
+      dpr={mobile ? [1, 1.5] : [1, 1.75]}
       camera={{ fov: 35, position: [0, 0.6, 9.5], near: 0.1, far: 120 }}
       className="r3f"
       gl={{ antialias: true, alpha: true, preserveDrawingBuffer: true, powerPreference: "high-performance" }}
@@ -288,7 +288,7 @@ export default function Scene() {
     >
       <ambientLight intensity={0.5} />
       <directionalLight position={[3, 5, 4]} intensity={1.2} />
-      <Environment resolution={256} frames={1}>
+      <Environment resolution={128} frames={1}>
         <Lightformer intensity={2} position={[0, 6, -10]} scale={[12, 6, 1]} />
         <Lightformer intensity={1.4} position={[-6, 1, 0]} rotation-y={Math.PI / 2} scale={[30, 0.4, 1]} />
         <Lightformer intensity={1.4} position={[6, 1, 0]} rotation-y={-Math.PI / 2} scale={[30, 0.4, 1]} />

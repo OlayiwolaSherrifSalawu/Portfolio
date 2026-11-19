@@ -9,7 +9,7 @@ export const profile = {
     "I’m Olayiwola, a junior software engineer. I build Go backends, TypeScript and React Native apps, Flutter mobile and Soroban smart contracts — from offline PayPal payments to cross-border payroll.",
   github: "https://github.com/OlayiwolaSherrifSalawu",
   // Leave empty to hide. Add them when you’re ready.
-  email: "",
+  email: "salawuolayiwola181@gmail.com",
   linkedin: "",
   x: "",
   cv: "",
@@ -28,13 +28,18 @@ export type Project = {
   role: string;
   stack: string[];
   status?: string;
-  links: { kind: "site" | "code"; href: string }[];
+  /** "prs" links to merged pull requests: evidence of contribution on team repos. */
+  links: { kind: "site" | "code" | "prs"; href: string; count?: number }[];
   device: DeviceKind;
   /** Optional real screenshot in /public, e.g. "/screens/tpay.png". Replaces the drawn screen. */
   screenshot?: string;
 };
 
 const gh = (repo: string) => `${profile.github}/${repo}`;
+const handle = profile.github.split("/").pop();
+/** Merged pull requests by me in an upstream repo. */
+const prs = (upstream: string) =>
+  `https://github.com/${upstream}/pulls?q=${encodeURIComponent(`is:pr is:merged author:${handle}`)}`;
 
 export const projects: Project[] = [
   {
@@ -50,6 +55,7 @@ export const projects: Project[] = [
     status: "Prototype · PayPal sandbox",
     links: [
       { kind: "site", href: "https://t-paypublic-website.vercel.app" },
+      { kind: "prs", href: prs("ATA-African-Technology-Accelerator/T-Pay_Public"), count: 18 },
       { kind: "code", href: gh("T-Pay_Public") },
     ],
     device: "phone",
@@ -67,6 +73,7 @@ export const projects: Project[] = [
     status: "Stellar testnet",
     links: [
       { kind: "site", href: "https://flowpay-silk.vercel.app" },
+      { kind: "prs", href: prs("flowpay-bmoni/flowpay"), count: 82 },
       { kind: "code", href: gh("flowpay") },
     ],
     device: "phone",
@@ -124,19 +131,19 @@ export const secrets: Record<string, { text: string; top: string; left: string }
   stockqc: { text: "FIFO: first in, first out, like the queue at the bank.", top: "84%", left: "44%" },
   kneescope: { text: "those knees are drawn with ellipses. no real scans here.", top: "86%", left: "34%" },
   typascii: { text: "try typing your own name in the live demo.", top: "84%", left: "44%" },
-  stellar: { text: "seven repos and counting.", top: "82%", left: "62%" },
+  stellar: { text: "30 merged pull requests, and counting.", top: "82%", left: "62%" },
   about: { text: "fun fact: each grid square is 28px.", top: "18%", left: "62%" },
   contact: { text: "you read all the hidden notes. now let’s talk.", top: "74%", left: "58%" },
 };
 
+/** Stellar/Soroban repos with merged pull requests of mine. Counts as of Nov 2026. */
 export const stellarWork = [
-  { name: "FlowFi", note: "DeFi payment streaming and recurring subscriptions", href: gh("flowfi") },
-  { name: "TrusTrove", note: "Invoice financing for small businesses", href: gh("TrusTrove-contract") },
-  { name: "HarvestLock", note: "Soroban escrow for tranched forward commitments", href: gh("HarvestLock-Contracts") },
-  { name: "Fortexa", note: "Payment firewall for autonomous agent actions", href: gh("Fortexa") },
-  { name: "Wayfare", note: "Stablecoin corridor pricing and route scoring", href: gh("wayfare") },
-  { name: "Assay", note: "On-chain safety gate for Stellar assets", href: gh("Assay") },
-  { name: "Vellar", note: "x402 payment facilitator and SDK", href: gh("vellar-sdk") },
+  { name: "Assay", note: "On-chain safety gate for Stellar assets", prs: 9, href: prs("use-assay/Assay") },
+  { name: "Wayfare", note: "Stablecoin corridor pricing and route scoring", prs: 7, href: prs("Wayfare-labs/wayfare") },
+  { name: "FlowFi", note: "DeFi payment streaming and recurring subscriptions", prs: 4, href: prs("LabsCrypt/flowfi") },
+  { name: "HarvestLock", note: "Soroban escrow for tranched forward commitments", prs: 4, href: prs("Agrisettle/HarvestLock-Contracts") },
+  { name: "ProtocolCanary", note: "Versioned protocol compatibility fixtures", prs: 4, href: prs("StellarCanary/ProtocolCanary-Fixtures") },
+  { name: "TrusTrove", note: "Invoice financing for small businesses", prs: 2, href: prs("TrusTrove/TrusTrove-contract") },
 ];
 
 export const skills: { group: string; items: string[] }[] = [

@@ -569,7 +569,7 @@ main {
 }
 .list a {
   display: grid;
-  grid-template-columns: 8.5rem minmax(0, 1fr) auto;
+  grid-template-columns: 8.5rem minmax(0, 1fr) auto auto;
   gap: var(--space-4);
   align-items: baseline;
   min-height: 48px;
@@ -589,6 +589,14 @@ main {
 .list-note {
   font-size: var(--text-small);
   color: var(--color-text-secondary);
+}
+.list-count {
+  font-family: var(--mono);
+  font-size: var(--text-label);
+  font-weight: 500;
+  white-space: nowrap;
+  color: var(--color-accent);
+  font-variant-numeric: tabular-nums;
 }
 
 /* About */
@@ -646,8 +654,14 @@ main {
   :root {
     --nav-h: 60px;
   }
+  /* Keep the full name for screen readers; show the short one visually. */
   .wordmark .full {
-    display: none;
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
   }
   .wordmark .short {
     display: inline;
@@ -685,6 +699,10 @@ main {
     grid-column: 1;
     grid-row: 2;
   }
+  .list-count {
+    grid-column: 1;
+    grid-row: 3;
+  }
   .skills {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -710,38 +728,16 @@ main {
 .r3f {
   position: absolute !important;
   inset: 0;
+  animation: scene-in 0.9s ease both;
 }
-
-/* ───────── Hover inspector: dashed box with square corner handles ───────── */
-@media (hover: hover) and (pointer: fine) {
-  .inspect {
-    position: relative;
-    outline: 1px dashed transparent;
-    outline-offset: 6px;
-    transition: outline-color 0.15s ease;
-  }
-  .inspect::before {
-    content: "";
-    position: absolute;
-    inset: -10px;
+@keyframes scene-in {
+  from {
     opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.15s ease;
-    background:
-      linear-gradient(var(--color-surface), var(--color-surface)) 1px 1px / 5px 5px no-repeat,
-      linear-gradient(var(--color-surface), var(--color-surface)) calc(100% - 1px) 1px / 5px 5px no-repeat,
-      linear-gradient(var(--color-surface), var(--color-surface)) 1px calc(100% - 1px) / 5px 5px no-repeat,
-      linear-gradient(var(--color-surface), var(--color-surface)) calc(100% - 1px) calc(100% - 1px) / 5px 5px no-repeat,
-      linear-gradient(var(--color-accent), var(--color-accent)) 0 0 / 7px 7px no-repeat,
-      linear-gradient(var(--color-accent), var(--color-accent)) 100% 0 / 7px 7px no-repeat,
-      linear-gradient(var(--color-accent), var(--color-accent)) 0 100% / 7px 7px no-repeat,
-      linear-gradient(var(--color-accent), var(--color-accent)) 100% 100% / 7px 7px no-repeat;
   }
-  .inspect:hover {
-    outline-color: var(--color-accent);
-  }
-  .inspect:hover::before {
-    opacity: 1;
+}
+@media (prefers-reduced-motion: reduce) {
+  .r3f {
+    animation: none;
   }
 }
 

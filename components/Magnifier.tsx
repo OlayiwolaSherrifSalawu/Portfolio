@@ -152,8 +152,11 @@ export default function Magnifier() {
 
     let raf = 0;
     let lastPoke = { x: pos.x, y: pos.y };
+    let last = { x: NaN, y: NaN, scroll: NaN, tilt: NaN };
+    let frame = 0;
     const tick = () => {
       raf = requestAnimationFrame(tick);
+      frame++;
 
       // Glide after a flick, bouncing softly off the screen edges.
       if (!dragging && (Math.abs(vel.x) > 0.05 || Math.abs(vel.y) > 0.05)) {
@@ -190,6 +193,15 @@ export default function Magnifier() {
       }
 
       const { x, y } = pos;
+      // Only touch the DOM when the glass or the page actually moved.
+      const moved =
+        Math.abs(x - last.x) > 0.1 ||
+        Math.abs(y - last.y) > 0.1 ||
+        window.scrollY !== last.scroll ||
+        Math.abs(tilt - last.tilt) > 0.01;
+      if (moved) last = { x, y, scroll: window.scrollY, tilt };
+      // The 3D devices float, so the canvas copy still refreshes, but at half rate when the glass is still.
+      if (!moved && frame % 2) return;
       el.style.transform = `translate3d(${x - R}px, ${y - R}px, 0) rotate(${tilt.toFixed(2)}deg)`;
       const tx = R - Z * x;
       const ty = R - Z * y;

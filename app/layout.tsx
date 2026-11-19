@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Instrument_Serif } from "next/font/google";
 import { profile } from "@/lib/content";
+import { siteUrl } from "@/lib/site";
 import "./globals.css";
 
 const serif = Instrument_Serif({
@@ -13,9 +14,16 @@ const serif = Instrument_Serif({
 const sans = Geist({ subsets: ["latin"], variable: "--font-sans", display: "swap" });
 const mono = Geist_Mono({ subsets: ["latin"], variable: "--font-mono", display: "swap" });
 
+const title = `${profile.name} · ${profile.title}`;
+
 export const metadata: Metadata = {
-  title: `${profile.name} · ${profile.title}`,
+  metadataBase: new URL(siteUrl),
+  title,
   description: profile.intro,
+  alternates: { canonical: "/" },
+  authors: [{ name: profile.name, url: profile.github }],
+  openGraph: { type: "website", url: "/", title, description: profile.intro, siteName: profile.name },
+  twitter: { card: "summary_large_image", title, description: profile.intro },
 };
 
 export const viewport: Viewport = { themeColor: "#f5f1e8" };

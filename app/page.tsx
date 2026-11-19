@@ -51,6 +51,7 @@ function Secret({ id }: { id: string }) {
 
 export default function Home() {
   const contacts = [
+    profile.email && { label: "GitHub", href: profile.github },
     profile.linkedin && { label: "LinkedIn", href: profile.linkedin },
     profile.x && { label: "X", href: profile.x },
     profile.cv && { label: "Download CV", href: profile.cv },
@@ -78,7 +79,7 @@ export default function Home() {
           <a href="#about" className="nav-link">
             About
           </a>
-          <a href="#contact" className="btn btn-primary btn-sm">
+          <a href={profile.email ? `mailto:${profile.email}` : "#contact"} className="btn btn-primary btn-sm">
             Get in touch
           </a>
         </div>
@@ -90,12 +91,12 @@ export default function Home() {
             <p className="label">
               {profile.name} · {profile.title}
             </p>
-            <h1 id="hero-title" className="display inspect" data-hover="H1 · Instrument Serif">
+            <h1 id="hero-title" className="display">
               {profile.headline.before}
               <mark className="hl">{profile.headline.highlight}</mark>
               {profile.headline.after}
             </h1>
-            <p className="lede inspect" data-hover="Lede · Geist">
+            <p className="lede">
               {profile.intro}
             </p>
             <div className="actions">
@@ -138,13 +139,13 @@ export default function Home() {
                     {p.kicker}
                   </p>
                 </header>
-                <h2 id={`${p.id}-title`} className="title inspect" data-hover="H2 · Instrument Serif">
+                <h2 id={`${p.id}-title`} className="title">
                   {p.name}
                 </h2>
-                <p className="tagline inspect" data-hover="Tagline · Instrument Serif Italic">
+                <p className="tagline">
                   {p.tagline}
                 </p>
-                <p className="body inspect" data-hover="Body · Geist">
+                <p className="body">
                   {p.description}
                 </p>
                 <dl className="meta">
@@ -167,7 +168,7 @@ export default function Home() {
                 <p className="links">
                   {p.links.map((l) => (
                     <ExternalLink key={l.href} href={l.href}>
-                      {l.kind === "site" ? "Live site" : "Source code"}
+                      {l.kind === "site" ? "Live site" : l.kind === "prs" ? `${l.count} merged PRs` : "Source code"}
                       <span className="sr-only"> for {p.name}</span>
                     </ExternalLink>
                   ))}
@@ -184,11 +185,11 @@ export default function Home() {
         <section id="stellar" data-stop className="section wide" aria-labelledby="stellar-title">
           <div className="card card-wide">
             <p className="label">Also building</p>
-            <h2 id="stellar-title" className="title inspect" data-hover="H2 · Instrument Serif">
+            <h2 id="stellar-title" className="title">
               On Stellar
             </h2>
             <p className="body">
-              Frontend and backend work across seven Stellar and Soroban projects: payments, escrow, trade finance and
+              Merged pull requests across six Stellar and Soroban projects: payments, escrow, trade finance and
               asset safety.
             </p>
             <ul className="list">
@@ -197,6 +198,7 @@ export default function Home() {
                   <a href={w.href} target="_blank" rel="noopener noreferrer">
                     <span className="list-name">{w.name}</span>
                     <span className="list-note">{w.note}</span>
+                    <span className="list-count">{w.prs} merged PRs</span>
                     <span className="sr-only"> (opens in a new tab)</span>
                     <span aria-hidden className="ext">
                       ↗
@@ -212,7 +214,7 @@ export default function Home() {
         <section id="about" data-stop className="section wide" aria-labelledby="about-title">
           <div className="card card-wide">
             <p className="label">About</p>
-            <h2 id="about-title" className="title inspect" data-hover="H2 · Instrument Serif">
+            <h2 id="about-title" className="title">
               Problems with <mark className="hl">real constraints</mark>
             </h2>
             <p className="body">
@@ -239,7 +241,7 @@ export default function Home() {
         <section id="contact" data-stop className="section contact" aria-labelledby="contact-title">
           <div className="contact-copy">
             <p className="label">Contact</p>
-            <h2 id="contact-title" className="display inspect" data-hover="H2 · Instrument Serif">
+            <h2 id="contact-title" className="display">
               Hiring a junior engineer? <mark className="hl">Let’s talk.</mark>
             </h2>
             <p className="lede">Open to junior software engineering roles, internships and collaborations.</p>
