@@ -2,6 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { Component, useEffect, useState, type ReactNode } from "react";
+import LiquidBackground from "./LiquidBackground";
 
 const Scene = dynamic(() => import("./Scene"), { ssr: false });
 
@@ -30,6 +31,7 @@ export default function SceneLoader() {
   useEffect(() => setOk(hasWebGL()), []);
   return (
     <div className="stage" aria-hidden>
+      <LiquidBackground />
       {ok && (
         <Boundary>
           <Scene />

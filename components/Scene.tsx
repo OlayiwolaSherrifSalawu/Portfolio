@@ -1,16 +1,16 @@
 "use client";
 
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { Environment, Float, Lightformer, RoundedBox, Sparkles } from "@react-three/drei";
+import { Environment, Float, Lightformer, RoundedBox } from "@react-three/drei";
 import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { projects, type Project } from "@/lib/content";
 import { drawScreen } from "@/lib/screens";
 
-const BG = "#0a0a0a";
+const INK = "#16203a";
 const SPACING = 9;
 
-type Shared = { active: number; tops: number[] };
+type Shared = { active: number; tops: number[]; fadeNear: number; fadeFar: number };
 
 /** Where each device sits. Text goes on the opposite side on desktop. */
 function layout(i: number, mobile: boolean) {
@@ -41,8 +41,8 @@ function keyframes(mobile: boolean): Key[] {
     const mx = layout(i, true).pos.x;
     k.push(
       mobile
-        ? { p: v(mx, 0.2, z + 7.2), t: v(mx, 0.2, z), fog: [7.5, 16] }
-        : { p: v(0, 0.15, z + 5.2), t: v(0, 0, z), fog: [5.5, 14] },
+        ? { p: v(mx, 0.2, z + 7.2), t: v(mx, 0.2, z), fog: [8, 13] }
+        : { p: v(0, 0.15, z + 5.2), t: v(0, 0, z), fog: [6, 11] },
     );
   });
   // Stellar: from the side, the row of devices stretches across the right of the screen.
@@ -59,7 +59,7 @@ function CameraRig({ shared, mobile, reduced }: { shared: Shared; mobile: boolea
   const goalP = useRef(new THREE.Vector3());
   const goalT = useRef(new THREE.Vector3());
   const look = useRef(keys[0].t.clone());
-  const { camera, pointer, scene } = useThree();
+  const { camera, pointer } = useThree();
 
   useFrame((_, dt) => {
     const tops = shared.tops;
@@ -86,13 +86,11 @@ function CameraRig({ shared, mobile, reduced }: { shared: Shared; mobile: boolea
     look.current.y = THREE.MathUtils.damp(look.current.y, goalT.current.y, lambda, d);
     look.current.z = THREE.MathUtils.damp(look.current.z, goalT.current.z, lambda, d);
     camera.lookAt(look.current);
-    const fog = scene.fog as THREE.Fog | null;
-    if (fog) {
-      const near = THREE.MathUtils.lerp(keys[i].fog[0], keys[i + 1].fog[0], f);
-      const far = THREE.MathUtils.lerp(keys[i].fog[1], keys[i + 1].fog[1], f);
-      fog.near = THREE.MathUtils.damp(fog.near, near, lambda, d);
-      fog.far = THREE.MathUtils.damp(fog.far, far, lambda, d);
-    }
+    // Distance fade (used instead of fog, which would paint devices paper-coloured over the CSS grid).
+    const near = THREE.MathUtils.lerp(keys[i].fog[0], keys[i + 1].fog[0], f);
+    const far = THREE.MathUtils.lerp(keys[i].fog[1], keys[i + 1].fog[1], f);
+    shared.fadeNear = THREE.MathUtils.damp(shared.fadeNear, near, lambda, d);
+    shared.fadeFar = THREE.MathUtils.damp(shared.fadeFar, far, lambda, d);
   });
   return null;
 }
@@ -120,14 +118,30 @@ function useScreenTexture(project: Project) {
   return tex;
 }
 
-const shell = { color: "#1b1b1e", metalness: 0.75, roughness: 0.28, clearcoat: 1, clearcoatRoughness: 0.2 };
+const shell = { color: "#1d2541", metalness: 0.55, roughness: 0.32, clearcoat: 1, clearcoatRoughness: 0.25 };
+
+/** Soft radial blob used as a shadow on the "paper" under each device. Shared by all devices. */
+let shadowTex: THREE.CanvasTexture | null = null;
+function getShadowTexture() {
+  if (shadowTex) return shadowTex;
+  const c = document.createElement("canvas");
+  c.width = c.height = 128;
+  const g = c.getContext("2d")!;
+  const grad = g.createRadialGradient(64, 64, 0, 64, 64, 64);
+  grad.addColorStop(0, "rgba(255,255,255,1)");
+  grad.addColorStop(1, "rgba(255,255,255,0)");
+  g.fillStyle = grad;
+  g.fillRect(0, 0, 128, 128);
+  shadowTex = new THREE.CanvasTexture(c);
+  return shadowTex;
+}
 
 function Screen({ w, h, y = 0, z, tex, index, shared }: { w: number; h: number; y?: number; z: number; tex: THREE.Texture | null; index: number; shared: Shared }) {
   const mat = useRef<THREE.MeshBasicMaterial>(null);
   useFrame((_, dt) => {
     if (!mat.current) return;
     const on = shared.active === index + 1 || shared.active === 0 || shared.active > projects.length;
-    const goal = on ? 1 : 0.45;
+    const goal = on ? 1 : 0.7;
     const c = mat.current.color;
     c.setScalar(THREE.MathUtils.damp(c.r, goal, 4, Math.min(dt, 0.05)));
   });
@@ -149,7 +163,41 @@ function Device({ project, index, shared, mobile, reduced }: { project: Project;
     if (top !== undefined) window.scrollTo({ top, behavior: reduced ? "auto" : "smooth" });
   };
 
+  const root = useRef<THREE.Group>(null);
+  const shadowMat = useRef<THREE.MeshBasicMaterial>(null);
+  const { camera } = useThree();
+
+  // Fade the whole device by its distance from the camera.
+  useFrame(() => {
+    const g = root.current;
+    if (!g) return;
+    const dist = camera.position.distanceTo(pos);
+    const span = Math.max(shared.fadeFar - shared.fadeNear, 0.001);
+    const alpha = 1 - THREE.MathUtils.smoothstep(dist, shared.fadeNear, shared.fadeNear + span);
+    g.visible = alpha > 0.01;
+    if (!g.visible) return;
+    const fading = alpha < 0.995;
+    g.traverse((o) => {
+      const m = (o as THREE.Mesh).material as THREE.Material | undefined;
+      if (!m || m === shadowMat.current) return;
+      if (m.transparent !== fading) {
+        m.transparent = fading;
+        m.needsUpdate = true;
+      }
+      m.opacity = alpha;
+    });
+    if (shadowMat.current) shadowMat.current.opacity = 0.16 * alpha;
+  });
+
+  const shadowW = (project.device === "phone" ? 1.5 : 2.8) * scale;
+  const shadowY = pos.y - (project.device === "phone" ? 1.35 : 1.5) * scale;
+
   return (
+    <group ref={root}>
+    <mesh position={[pos.x, shadowY, pos.z]} rotation={[-Math.PI / 2, 0, 0]} renderOrder={-1}>
+      <planeGeometry args={[shadowW, shadowW * 0.45]} />
+      <meshBasicMaterial ref={shadowMat} map={getShadowTexture()} color={INK} transparent opacity={0.16} depthWrite={false} />
+    </mesh>
     <Float position={pos} speed={reduced ? 0 : 1.3} rotationIntensity={reduced ? 0 : 0.25} floatIntensity={reduced ? 0 : 0.6}>
       <group
         rotation={[0, rotY, 0]}
@@ -178,7 +226,7 @@ function Device({ project, index, shared, mobile, reduced }: { project: Project;
               <Screen w={2.16} h={1.36} y={0.75} z={0.028} tex={tex} index={index} shared={shared} />
             </group>
             <RoundedBox args={[2.3, 0.06, 1.5]} radius={0.02} position={[0, -0.78, 0.72]}>
-              <meshPhysicalMaterial {...shell} color="#2a2a2e" metalness={0.5} roughness={0.6} clearcoat={0} />
+              <meshPhysicalMaterial {...shell} color="#2b3352" metalness={0.4} roughness={0.55} clearcoat={0} />
             </RoundedBox>
           </group>
         )}
@@ -199,11 +247,12 @@ function Device({ project, index, shared, mobile, reduced }: { project: Project;
         )}
       </group>
     </Float>
+    </group>
   );
 }
 
 export default function Scene() {
-  const shared = useRef<Shared>({ active: 0, tops: [] }).current;
+  const shared = useRef<Shared>({ active: 0, tops: [], fadeNear: 10, fadeFar: 42 }).current;
   const [mobile, setMobile] = useState(false);
   const [reduced, setReduced] = useState(false);
 
@@ -229,18 +278,15 @@ export default function Scene() {
     };
   }, [shared]);
 
-  const mid = -((projects.length - 1) * SPACING) / 2;
-
   return (
     <Canvas
       dpr={[1, 1.75]}
       camera={{ fov: 35, position: [0, 0.6, 9.5], near: 0.1, far: 120 }}
-      gl={{ antialias: true, powerPreference: "high-performance" }}
+      className="r3f"
+      gl={{ antialias: true, alpha: true, preserveDrawingBuffer: true, powerPreference: "high-performance" }}
       aria-hidden
     >
-      <color attach="background" args={[BG]} />
-      <fog attach="fog" args={[BG, 10, 42]} />
-      <ambientLight intensity={0.25} />
+      <ambientLight intensity={0.5} />
       <directionalLight position={[3, 5, 4]} intensity={1.2} />
       <Environment resolution={256} frames={1}>
         <Lightformer intensity={2} position={[0, 6, -10]} scale={[12, 6, 1]} />
@@ -252,15 +298,6 @@ export default function Scene() {
       {projects.map((p, i) => (
         <Device key={p.id} project={p} index={i} shared={shared} mobile={mobile} reduced={reduced} />
       ))}
-      <Sparkles
-        count={mobile ? 80 : 160}
-        scale={[14, 8, 44]}
-        position={[0, 0, mid]}
-        size={2}
-        speed={reduced ? 0 : 0.25}
-        opacity={0.35}
-        color="#fcf9f3"
-      />
     </Canvas>
   );
 }
