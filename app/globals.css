@@ -224,6 +224,7 @@ p {
   background-size: 100% 0.72em;
   background-repeat: no-repeat;
   background-position: 0 72%;
+  transition: background-size 0.9s cubic-bezier(0.65, 0, 0.35, 1);
   padding-inline: 0.04em;
   margin-inline: -0.04em;
   -webkit-box-decoration-break: clone;
@@ -832,8 +833,8 @@ main {
 /* Thick handle with a red collar where it meets the rim. */
 .lens-handle {
   position: absolute;
-  left: calc(85.4% + 4px);
-  inset-block-start: calc(85.4% + 4px);
+  left: 0;
+  inset-block-start: 0;
   width: calc(var(--r) * 0.22);
   height: calc(var(--r) * 0.82);
   min-width: 22px;
@@ -847,7 +848,6 @@ main {
       #2b3352 19% 26%,
       var(--color-solid) 26%
     );
-  transform: translateX(-50%) rotate(-45deg);
   transform-origin: top center;
   box-shadow: 0 12px 22px -6px color-mix(in oklab, var(--color-solid) 50%, transparent);
 }
@@ -867,4 +867,95 @@ main {
 }
 .lens .section > .secret {
   opacity: 1;
+}
+
+/* Highlighter draws in from the left (JS adds .hl-anim; without it the stroke is just there). */
+.hl-anim main .hl:not(.is-drawn) {
+  background-size: 0% 0.72em;
+}
+.lens .hl {
+  background-size: 100% 0.72em !important;
+  transition: none;
+}
+
+/* ───────── Scroll cursor: arrow ⇄ red reticle ───────── */
+html.scope-on,
+html.scope-on * {
+  cursor: none !important;
+}
+.scope {
+  position: fixed;
+  inset-block-start: -32px;
+  left: -32px;
+  z-index: 60;
+  width: 64px;
+  height: 64px;
+  pointer-events: none;
+  opacity: 0;
+  will-change: transform;
+}
+.scope.is-visible {
+  opacity: 1;
+}
+.scope svg {
+  overflow: visible;
+  display: block;
+}
+.scope-arrow,
+.scope-reticle {
+  transform-box: view-box;
+  transform-origin: 32px 32px;
+  transition:
+    transform 0.26s cubic-bezier(0.34, 1.4, 0.64, 1),
+    opacity 0.2s ease;
+}
+.scope-arrow path {
+  fill: #111;
+  stroke: #fff;
+  stroke-width: 1.4;
+  stroke-linejoin: round;
+}
+.scope-reticle {
+  opacity: 0;
+  transform: scale(0.3) rotate(-120deg);
+  fill: none;
+  stroke: var(--color-annotation-line);
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+.scope-dot {
+  fill: var(--color-annotation-line);
+  stroke: none;
+}
+.scope-outer {
+  stroke-width: 1.25;
+  stroke-dasharray: 3 5;
+  opacity: 0.8;
+}
+.scope.is-target .scope-arrow {
+  opacity: 0;
+  transform: scale(0.2) rotate(90deg);
+}
+.scope.is-target .scope-reticle {
+  opacity: 1;
+  transform: scale(1) rotate(0deg);
+}
+.scope.is-target .scope-outer {
+  animation: scope-spin 2.4s linear infinite;
+  transform-box: view-box;
+  transform-origin: 32px 32px;
+}
+@keyframes scope-spin {
+  to {
+    rotate: 360deg;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .scope-arrow,
+  .scope-reticle {
+    transition: opacity 0.1s linear;
+  }
+  .scope.is-target .scope-outer {
+    animation: none;
+  }
 }

@@ -19,6 +19,7 @@ export default function Magnifier() {
   const cvs = useRef<HTMLCanvasElement>(null);
   const pageLayer = useRef<HTMLDivElement>(null);
   const fixedLayer = useRef<HTMLDivElement>(null);
+  const handle = useRef<HTMLDivElement>(null);
 
   useEffect(() => setMounted(true), []);
 
@@ -38,21 +39,24 @@ export default function Magnifier() {
     sizeLens();
 
     // Physics state: where the lens is drawn (pos), where it wants to be (goal), and flick velocity.
-    // Start on empty paper, fully on screen with room for the handle.
-    const narrow = window.innerWidth < 768;
-    const pos = narrow
-      ? { x: window.innerWidth - R - 28, y: window.innerHeight - R * 1.6 - 24 }
-      : { x: Math.max(R + 24, window.innerWidth - 2 * R - 120), y: window.innerHeight - R - 64 };
+    // Rest tucked against the right edge, about half on screen, until someone moves it.
+    const dock = () => ({
+      x: window.innerWidth + R * 0.05,
+      y: window.innerWidth < 768 ? window.innerHeight - R - 24 : window.innerHeight * 0.66,
+    });
+    let touched = false;
+    const pos = dock();
     const goal = { ...pos };
     const vel = { x: 0, y: 0 };
     let tilt = 0;
+    let handleAngle = 40; // degrees from straight down; positive points down-left
     let dragging = false;
     const grab = { dx: 0, dy: 0, lastX: 0, lastY: 0, lastT: 0 };
 
     const clamp = () => {
-      const m = R * 0.4; // allow it to hang a little off the edge
-      goal.x = Math.min(Math.max(goal.x, m), window.innerWidth - m);
-      goal.y = Math.min(Math.max(goal.y, m), window.innerHeight - m);
+      // Sideways it may tuck just past the edge; vertically it stays mostly on screen.
+      goal.x = Math.min(Math.max(goal.x, -R * 0.1), window.innerWidth + R * 0.1);
+      goal.y = Math.min(Math.max(goal.y, R * 0.4), window.innerHeight - R * 0.4);
     };
 
     // Clone the page into the lens.
@@ -80,6 +84,7 @@ export default function Magnifier() {
 
     const onResize = () => {
       sizeLens();
+      if (!touched) Object.assign(goal, dock());
       clamp();
       build();
     };
@@ -89,6 +94,7 @@ export default function Magnifier() {
 
     const onDown = (e: PointerEvent) => {
       dragging = true;
+      touched = true;
       el.setPointerCapture(e.pointerId);
       el.classList.add("is-dragging");
       grab.dx = e.clientX - goal.x;
@@ -130,6 +136,7 @@ export default function Magnifier() {
       const m = moves[e.key];
       if (!m) return;
       e.preventDefault();
+      touched = true;
       goal.x += m[0];
       goal.y += m[1];
       vel.x = vel.y = 0;
@@ -170,6 +177,16 @@ export default function Magnifier() {
       if (Math.hypot(pos.x - lastPoke.x, pos.y - lastPoke.y) > 6) {
         poke(pos.x, pos.y);
         lastPoke = { x: pos.x, y: pos.y };
+      }
+
+      // The handle swings to point toward the middle of the screen, so it stays visible at either edge.
+      const targetAngle = pos.x > window.innerWidth / 2 ? 40 : -40;
+      handleAngle += (targetAngle - handleAngle) * (reduced.matches ? 1 : 0.12);
+      if (handle.current) {
+        const a = (handleAngle * Math.PI) / 180;
+        handle.current.style.left = `${R - Math.sin(a) * (R + 4)}px`;
+        handle.current.style.top = `${R + Math.cos(a) * (R + 4)}px`;
+        handle.current.style.transform = `translateX(-50%) rotate(${handleAngle.toFixed(2)}deg)`;
       }
 
       const { x, y } = pos;
@@ -232,7 +249,7 @@ export default function Magnifier() {
         <div ref={fixedLayer} className="lens-layer" />
         <div className="lens-glass" />
       </div>
-      <div className="lens-handle" aria-hidden />
+      <div ref={handle} className="lens-handle" aria-hidden />
     </div>,
     document.body,
   );

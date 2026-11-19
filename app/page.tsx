@@ -1,6 +1,8 @@
 import ProjectIndex from "@/components/ProjectIndex";
+import HighlightReveal from "@/components/HighlightReveal";
 import Magnifier from "@/components/Magnifier";
 import SceneLoader from "@/components/SceneLoader";
+import ScrollCursor from "@/components/ScrollCursor";
 import { profile, projects, secrets, skills, stellarWork } from "@/lib/content";
 
 const pad = (n: number) => String(n).padStart(2, "0");
@@ -274,6 +276,8 @@ export default function Home() {
         </section>
       </main>
       <Magnifier />
+      <HighlightReveal />
+      <ScrollCursor />
     </>
   );
 }
